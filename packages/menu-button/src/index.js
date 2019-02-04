@@ -323,16 +323,22 @@ MenuList.propTypes = {
   children: node
 };
 
-let focusableChildrenTypes = [MenuItem, MenuLink];
+MenuItem.__reach_isFocusableChild = true;
+MenuLink.__reach_isFocusableChild = true;
 
-let isFocusableChildType = child => focusableChildrenTypes.includes(child.type);
+let isFocusableChildType = child => child.type.__reach_isFocusableChild;
+
 let getFocusableMenuChildren = children => {
-  return children.filter(child => isFocusableChildType(child));
+  return children.filter(child => {
+    return isFocusableChildType(child);
+  });
 };
 
 let MenuListImpl = React.forwardRef(
   ({ refs, state, setState, children, onKeyDown, onBlur, ...rest }, ref) => {
-    let focusableChildren = getFocusableMenuChildren(children);
+    let childrenAsArray = React.Children.toArray(children);
+    let focusableChildren = getFocusableMenuChildren(childrenAsArray);
+
     return (
       <div
         data-reach-menu-list
@@ -372,15 +378,16 @@ let MenuListImpl = React.forwardRef(
           }
         })}
       >
-        {React.Children.map(children, (child, index) => {
+        {childrenAsArray.map((child, index) => {
           if (isFocusableChildType(child)) {
             let focusIndex = focusableChildren.indexOf(child);
-
             return React.cloneElement(child, {
               setState,
               state,
               index: focusIndex,
-              _ref: node => (refs.items[focusIndex] = node)
+              _ref: node => {
+                refs.items[focusIndex] = node;
+              }
             });
           }
 
